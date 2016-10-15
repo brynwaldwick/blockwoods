@@ -10,6 +10,12 @@
 # 0 is high
 # 1 is low
 
+# Roulette Wheel maps random number from 0 to 37 to betting outcomes
+# Roulette Wheel resolver interprets the results of different bets
+
+# They are decoupled so you could e.g. deploy a new resolver and change
+# the rules of the game without having to remake another wheel.
+
 module.exports = "
 pragma solidity ^0.4.0;
 

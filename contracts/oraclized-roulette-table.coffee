@@ -1,4 +1,5 @@
-# TODO: make an 'IssuableDivisibleBet'
+# Liquidity book is a mechanism for posting collateral for an array
+# of different contracts.
 
 module.exports = "
 
@@ -53,20 +54,6 @@ contract RouletteResolver {
     function resolveBetBlack(uint _outcome, bool _pick) returns (bool);
     function resolveBetOdd(uint _outcome, bool _pick) returns (bool);
     function resolveBetLow(uint _outcome, bool _pick) returns (bool);
-}
-
-contract Spinner {
-    address public wheel;
-
-    event LogMessage(address from, string spun);
-
-    function Spinner(address _wheel) {
-        wheel = _wheel;
-    }
-
-    function spinWheel() {
-        LogMessage(msg.sender, 'spun');
-    }
 }
 
 contract OracledIssuableBet {
@@ -140,6 +127,7 @@ contract StraightUpBet is OpenableBet {
 contract RouletteTable is LiquidityBook {
 
     address public resolver;
+    address public oracle;
     address public owner;
 
     address public straight_up_bet;
@@ -151,6 +139,10 @@ contract RouletteTable is LiquidityBook {
 
     modifier only_children() {
         if (!children[msg.sender]) throw;
+        _;
+    }
+    modifier only_oracle() {
+        if (msg.sender != oracle) throw;
         _;
     }
 
@@ -210,7 +202,9 @@ contract RouletteTable is LiquidityBook {
         takeBetWithBool(odd_bet, pick);
     }
 
-    function handleOutcome(address bettor, uint outcome) {
+    function handleOutcome(address bettor, uint outcome)
+        only_oracle
+    {
         resolveLow(bettor, outcome);
         resolveStraightUp(bettor, outcome);
     }
