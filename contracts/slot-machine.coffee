@@ -69,7 +69,8 @@ contract SlotMachineResolver {
     }
 
     function pair (uint n) returns (uint) {
-        return 5;
+        uint weight = SlotMachineLayout(machine_layout).getWeight(n);
+        return weight * 3;
     }
 
     function trips (uint n) returns (uint) {
@@ -164,11 +165,17 @@ contract OracleSlotMachine{
     }
 
     function disburse() {
-        if (pays[msg.sender] > 0) {
-            uint amount = pays[msg.sender];
-            pays[msg.sender] = 0;
+        uint amount = pays[msg.sender];
+        if (amount > 0) {
             if (!msg.sender.send(amount)) throw;
+            pays[msg.sender] = 0;
         } else throw;
+    }
+
+    function injectCapital() only(owner) payable {}
+
+    function getBalance() public returns (uint) {
+        return this.balance;
     }
 
     function setOracle(address _o) only(owner) {
