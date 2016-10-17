@@ -29,10 +29,17 @@ handlePullSlot = (event_data, cb) ->
     # TODO: submit result to wheel contract
     {bettor} = event_data
     ContractsService 'didPullSlot', bettor, s_1, s_2, s_3, (err, resp) ->
+        console.log 'ill handle this', event_data
         service.publish "pulls:#{bettor}:result"
+        service.publish "tx:#{event_data.event.transactionHash}:done", {s_1, s_2, s_3, outcome_tx: resp}
         cb null, success: true
+
+pullLeverDone = (event_data, cb) ->
+    console.log 'wonk jones', "tx:#{event_data.event.transactionHash}:done"
+    service.publish "tx:#{event_data.event.transactionHash}:done", event_data, cb
 
 service = new somata.Service 'blockwoods:engine', {
     handleSpin
     handlePullSlot
+    pullLeverDone
 }

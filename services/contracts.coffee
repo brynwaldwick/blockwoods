@@ -80,7 +80,8 @@ subscribeContract = (c) ->
                         EngineService 'handlePullSlot', _data, (err, resp) ->
                             console.log err, resp
                     else
-                        console.log 'this is the result', _data
+                        EngineService 'pullLeverDone', _data, (err, resp) ->
+                            console.log 'this is the result', _data
 
 sendSpinResult = (bettor, result, cb) ->
     callFunction 'RouletteTable', ROULETTE, 'handleOutcome', bettor, result.toString(), {}, cb
