@@ -54,6 +54,25 @@ processEvent =
             [bettor, result] = _data
             return {kind, bettor, result, event: e}
 
+    FlopProp: (e) ->
+        kind = 'claim-prop'
+        _data = SolidityCoder.decodeParams(["address", "uint"], e.data.replace("0x",""))
+        [bettor, balance] = _data
+        return {bettor, balance, event: e}
+
+    RouletteTable: (e) ->
+        if e.topics[0] == '0xdf2f43000ad262ff927c671ed83129f9054af075e5d3add03a2ba7116e719a51'
+            kind = 'spin'
+            _data = SolidityCoder.decodeParams(["address", "string"], e.data.replace("0x",""))
+            [bettor, spun] = _data
+            return {bettor, kind, spun, event: e}
+        else
+            kind = 'roulette-result'
+            _data = SolidityCoder.decodeParams(["address", "string", "uint"], e.data.replace("0x",""))
+            [bettor, kind, value] = _data
+            result = value.c[0]
+            return {bettor, kind, result, value, event: e}
+
 Subscriptions = []
 
 subscribeContract = (c) ->
@@ -73,8 +92,8 @@ subscribeContract = (c) ->
                 console.log "New event from #{c.type}", result
                 console.log "Decoded to", _data
                 if c.type == 'RouletteTable'
-                    EngineService 'handleSpin', _data, (err, resp) ->
-                        console.log err, resp
+                    EngineService 'handleRouletteEvent', _data, (err, resp) -> #...
+
                 else if c.type == 'OracleSlotMachine'
                     if _data.kind == 'pull'
                         EngineService 'handlePullSlot', _data, (err, resp) ->
@@ -82,9 +101,11 @@ subscribeContract = (c) ->
                     else
                         EngineService 'pullLeverDone', _data, (err, resp) ->
                             console.log 'this is the result', _data
+                else
+                    console.log 'other'
 
 sendSpinResult = (bettor, result, cb) ->
-    callFunction 'RouletteTable', ROULETTE, 'handleOutcome', bettor, result.toString(), {}, cb
+    callFunction 'RouletteTable', ROULETTE, 'handleOutcome', bettor, result.toString(), {value: 0, gas: 300000}, cb
 
 didPullSlot = (bettor, args..., cb) ->
     callFunction 'OracleSlotMachine', SLOT, 'handleOutcome', bettor, args..., {value: 0, gas: 300000}, (err, resp) ->
@@ -93,6 +114,8 @@ didPullSlot = (bettor, args..., cb) ->
 
 subscribeContract {address: config.spinner_address, type: 'Spinner'}
 subscribeContract {address: config.slot_address, type: 'OracleSlotMachine'}
+subscribeContract {address: config.prop_address, type: 'FlopProp'}
+subscribeContract {address: config.table_address, type: 'RouletteTable'}
 
 findContracts = (query, cb) ->
     redis.keys 'contracts:*', (err, keys) ->
