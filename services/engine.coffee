@@ -14,13 +14,27 @@ getRandomIntInclusive = (min, max) ->
 ContractsService = client.bindRemote 'blockwoods:contracts'
 
 handleSpin = (event_data, cb) ->
-    result = getRandomIntInclusive 0, 27
+    result = getRandomIntInclusive 0, 37
     console.log result
     # TODO: submit result to wheel contract
     {bettor} = event_data
     ContractsService 'sendSpinResult', bettor, result, (err, resp) ->
         service.publish "spins:#{bettor}:result"
-        cb null, success: true
+        service.publish "tx:#{event_data.event.transactionHash}:done", {n: result, outcome_tx: resp}
+        cb null, resp
+
+rouletteSpinDone = (event_data, cb) ->
+    {bettor, result} = event_data
+    service.publish "tx:#{event_data.event.transactionHash}:done", {bettor, result}
+
+handleRouletteEvent = (event_data, cb) ->
+
+    if event_data.kind == 'spin'
+        handleSpin event_data, (err, resp) ->
+            console.log err, resp
+    else
+        rouletteSpinDone event_data, (err, resp) ->
+            console.log err, resp
 
 handlePullSlot = (event_data, cb) ->
     s_1 = getRandomIntInclusive 0, 9
@@ -41,5 +55,6 @@ pullLeverDone = (event_data, cb) ->
 service = new somata.Service 'blockwoods:engine', {
     handleSpin
     handlePullSlot
+    handleRouletteEvent
     pullLeverDone
 }
