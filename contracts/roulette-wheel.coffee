@@ -16,6 +16,8 @@
 # They are decoupled so you could e.g. deploy a new resolver and change
 # the rules of the game without having to remake another wheel.
 
+# TODO: maybe move bet validation to resolver
+
 module.exports = "
 pragma solidity ^0.4.0;
 
@@ -92,21 +94,37 @@ contract RouletteWheelResolver {
         wheel = _wheel;
     }
 
-    function resolveStraightUp(uint _outcome, uint _pick) returns (bool) {
+    function resolveStraightUpBet(uint _outcome, uint _pick) returns (bool) {
         return (_outcome == _pick);
     }
 
-    function resolveBetBlack(uint _outcome, bool _pick) returns (bool) {
+    function resolveStreetBet(uint _outcome, uint _pick) returns (bool) {
+        return ((_outcome - (_outcome - 1)%3) == _pick);
+    }
+
+    function resolveSixLineBet(uint _outcome, uint _pick) returns (bool) {
+        return ((_outcome - (_outcome - 1)%6) == _pick);
+    }
+
+    function resolveColumnBet(uint _outcome, uint _pick) returns (bool) {
+        return (_outcome%3 == _pick);
+    }
+
+    function resolveDozenBet(uint _outcome, uint _pick) returns (bool) {
+        return ((_outcome - (_outcome - 1)%12) == _pick);
+    }
+
+    function resolveBlackBet(uint _outcome, bool _pick) returns (bool) {
         bool _r = RouletteWheel(wheel).getBlack(_outcome);
         return (_r == _pick);
     }
 
-    function resolveBetOdd(uint _outcome, bool _pick) returns (bool) {
+    function resolveOddBet(uint _outcome, bool _pick) returns (bool) {
         bool _r = RouletteWheel(wheel).getOdd(_outcome);
         return (_r == _pick);
     }
 
-    function resolveBetLow(uint _outcome, bool _pick) returns (bool) {
+    function resolveLowBet(uint _outcome, bool _pick) returns (bool) {
         bool _r = RouletteWheel(wheel).getLow(_outcome);
         return (_r == _pick);
     }

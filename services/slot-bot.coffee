@@ -9,9 +9,14 @@ client = new somata.Client()
 ContractsService = new somata.Client().bindRemote 'ethereum:contracts'
 BlockwoodsEngine = client.bindRemote 'blockwoods:engine'
 
+announce = require('nexus-announce')(config.announce)
+
 slot_address = config.slot_address
-MIN_BET = 1000000000000;
-MAX_BET = 1000000000000000;
+topic_base = "blockwoods:slots:7s-wild:#{slot_address}"
+
+MAX_BET = 100000000000000000
+
+wei_to_ether = 1000000000000000000
 
 pending_spins = {}
 
@@ -19,9 +24,7 @@ parseSender = (event) ->
     return event.sender.username
 
 validateBetAmount = (amount) ->
-    if amount < MIN_BET
-        return false
-    else if amount > MAX_BET
+    if amount > MAX_BET
         return false
     else
         return true
@@ -49,22 +52,27 @@ nexus_client.subscribe 'nexus:events', "event:#{NEXUS_ACCOUNT_ID}:#{SENDER}", (e
     if split_body[0] == 'balance'
         ContractsService 'getBalance', account, (err, resp) ->
             if resp?
-                sendNexusMessage resp
+                number = Number(resp) / wei_to_ether
+
+                sendNexusMessage number.toString()
 
     else if split_body[0] == 'pull'
-        valid = validateBetAmount split_body[1]
+        bet_amount = Number(split_body[1]) * wei_to_ether
+        valid = validateBetAmount bet_amount
         if !valid
-            return sendNexusMessage "Please bet between #{MIN_BET} and #{MAX_BET} wei."
+            return sendNexusMessage "Please bet below #{MAX_BET/wei_to_ether} ether."
 
         ContractsService 'getParameter', 'OracleSlotMachine', slot_address, 'active', account, (err, active_bet) ->
             if active_bet
                 sendNexusMessage 'You already have a bet active.'
             else
-                ContractsService 'callFunction', 'OracleSlotMachine', slot_address, 'pullLever', {account, value: split_body[1]}, (err, resp) ->
+                ContractsService 'callFunction', 'OracleSlotMachine', slot_address, 'pullLever', {account, value: bet_amount.toString(), gas: '75000'}, (err, resp) ->
 
                     sendNexusMessage 'Spinning...'
                     # wait for result and then broadcast result
                     client.on 'blockwoods:engine', "tx:#{resp}:done", (result) ->
+                        announce {type: 'play', game: 'slots-7s-wild', project: 'blockwoods', topic: topic_base, data: {result, txid: result.outcome_tx}}
+
                         sendNexusMessage "#{sender}, your result was #{result.s_1}, #{result.s_2}, #{result.s_3}"
                         # resolve pull
                         console.log "tx:#{result.outcome_tx}:done"
@@ -78,12 +86,14 @@ nexus_client.subscribe 'nexus:events', "event:#{NEXUS_ACCOUNT_ID}:#{SENDER}", (e
         # query "pays" to see how much could be disbursed
         ContractsService 'callFunction', 'OracleSlotMachine', slot_address, 'pays', account, {account}, (err, resp) ->
             console.log err, resp
-            sendNexusMessage resp
+            number = Number(resp) / wei_to_ether
+            console.log number
+            sendNexusMessage number.toString()
 
     else if split_body[0] == 'disburse'
         # do disbursal (send disburse from user's account)
-        ContractsService 'callFunction', 'OracleSlotMachine', slot_address, 'disburse', '', {account}, (err, resp) ->
-            console.log err, resp
+        ContractsService 'callFunction', 'OracleSlotMachine', slot_address, 'disburse', {account, gas: '75000'}, (err, resp) ->
+            console.log err, Number(resp)/wei_to_ether
             if !err?
                 sendNexusMessage 'Disbursing...'
 

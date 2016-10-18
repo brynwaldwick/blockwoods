@@ -3,7 +3,8 @@
 
 # Resolver computes payout as a multiple of the amount wagered
 
-# 100 + 16 * 30 + 8 * 42 = 916
+# pairs + trips + straights
+# (1 * 16 * 3 * 9) + (14 * 16) + 7 * (2 + 3 + 4 + 5 + 6 + 7 + 8 + 9) = 964  ( / 1000 spins)
 
 module.exports = "
 pragma solidity ^0.4.0;
@@ -70,16 +71,16 @@ contract SlotMachineResolver {
 
     function pair (uint n) returns (uint) {
         uint weight = SlotMachineLayout(machine_layout).getWeight(n);
-        return weight * 3;
+        return weight;
     }
 
     function trips (uint n) returns (uint) {
         uint weight = SlotMachineLayout(machine_layout).getWeight(n);
-        return weight * 30;
+        return weight * 14;
     }
 
     function straight (uint hi) returns (uint) {
-        return hi * 8;        
+        return hi * 7;
     }
 
     function numberWeight(uint n) returns (uint) {
@@ -93,8 +94,7 @@ contract OracleSlotMachine{
     address public resolver;
     address public oracle;
 
-    uint public max_bet = 1000000000000000;
-    uint public min_bet = 1000000000000;
+    uint public max_bet;
 
     mapping(address => uint) public wagered;
     mapping(address => bool) public active;
@@ -115,14 +115,13 @@ contract OracleSlotMachine{
 
     modifier bet_range() {
         if (msg.value > max_bet) throw;
-        if (msg.value < min_bet) throw;
         _;
     }
-
 
     function OracleSlotMachine (address r) {
         resolver = r;
         owner = msg.sender;
+        max_bet = 100000000000000000;
     }
 
     function pullLever()
@@ -180,6 +179,10 @@ contract OracleSlotMachine{
 
     function setOracle(address _o) only(owner) {
         oracle = _o;
+    }
+
+    function setMaxBet(uint n) only(owner) {
+        max_bet = n;
     }
 }
 
