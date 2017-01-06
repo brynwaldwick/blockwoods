@@ -1,0 +1,41 @@
+doctype html
+html
+    head
+        title
+            block title
+                | blockwoods - your casino, in the cloud
+        block metadata
+            meta(property="og:title" content="blockwoods - the casino in the cloud")
+            meta(name="twitter:title" content="blockwoods - the casino in the cloud")
+        meta(name="apple-mobile-web-app-capable", content="yes")
+        meta(name="mobile-web-app-capable", content="yes")
+        meta(name="HandheldFriendly", content="True")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no")
+        link(rel='stylesheet', href='//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.0.3/css/font-awesome.min.css')
+        meta(name="apple-mobile-web-app-status-bar-style", content="black-translucent")
+
+        link(href='http://fonts.googleapis.com/css?family=Roboto:400,700', rel='stylesheet', type='text/css')
+        link(rel='stylesheet', href='/css/app.css')
+
+    body
+        #header
+            .narrow
+                h1.brand
+                    code
+                        a(href='/') blockwoods
+                .links
+                    a(href='/') Home
+                    a(href='/info') What is this?
+                    //- a(href='/recipes') Recipes
+                    //- a(href='/login') Log in
+                #app
+            
+        block content
+
+    if domain
+        script.
+            window.domain = "#{ domain }";
+
+    script(src='/js/ga.js')
+    script(src='/js/app.js')
+    block scripts
